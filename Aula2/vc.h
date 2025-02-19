@@ -39,3 +39,5 @@ int vc_write_image(char* filename, IVC* image);
 
 // FUNÇÕES: ESPAÇOS DE COR
 int vc_gray_negative(IVC* srcdst);
+int vc_rgb_negative(IVC* srcdst);
+int vc_rgb_to_gray(IVC* src, IVC* dst);
