@@ -24,4 +24,5 @@ int main/*_vc0007*/(void)
 	system("cmd /c start FilterGear Images/FLIR/flir-01.pgm"); // Show input image
 	system("FilterGear vc0001.pgm"); // Show output image
 
+
 }
