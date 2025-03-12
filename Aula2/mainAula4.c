@@ -30,7 +30,7 @@ int main_vc0004(void)
 }
 
 //Abrir imagem em grayscale, fazer negativo e gravar em novo ficheiro
-int main/*_vc0004_1*/(void)
+int main_vc0004_1(void)
 {
 	IVC* image[2];
 

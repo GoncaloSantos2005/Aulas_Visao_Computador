@@ -457,3 +457,256 @@ int vc_rgb_to_gray(IVC* src, IVC* dst)
 	}
 	return 1;
 }
+
+int vc_rgb_to_hsv(IVC* src, IVC* dst)
+{
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+	float rf, gf, bf, hue, max, min;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 3) || (dst->channels != 3)) return 0;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			rf = (float)datasrc[pos_src];
+			gf = (float)datasrc[pos_src + 1];
+			bf = (float)datasrc[pos_src + 2];
+
+			//H: dst->data[pos]
+			//S: dst->data[pos+1]
+			//V: dst->data[pos+2
+
+			//-> max:
+			max = MAX3(rf,gf,bf);
+			//-> min:
+			min = MIN3(rf, gf, bf);
+
+			if (max == rf) {
+				if (gf >= bf) {
+					hue = 60 * ((gf - bf) / (max - min));
+				}
+				else if(bf > gf) {
+					hue = 360 + 60 * ((gf - bf) / (max - min));
+				}
+			}
+			else if (max == gf) {
+				hue = 120 + 60 * ((bf - rf) / (max - min));
+			}
+			else if (max == bf) {
+				hue = 240 + 60 * ((rf - gf) / (max - min));
+			}
+
+			dst->data[pos_dst] = (hue / 360) * 255;
+			if (max != min)
+				dst->data[pos_dst + 1] = (max - min) / max * 255;
+			else
+				dst->data[pos_dst + 1] = 0;
+			dst->data[pos_dst + 2] = max;
+
+		}
+	}
+	return 1;
+}
+
+int vc_hsv_segmentation(IVC* src, IVC* dst, int hmin, int hmax, int smin, int smax, int vmin, int vmax)
+{
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+	float hs, ss, vs;
+	float contador=0;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 3) || (dst->channels != 1)) return 0;
+	if (dst->levels != 255) return 0;
+	if (!(hmin >= 0 && hmax <= 360)) return 0;
+	if (!(smin >= 0 && smax <= 255)) return 0;
+	if (!(vmin >= 0 && vmax <= 255)) return 0;
+
+	hmin = ((float)hmin * 255)/360;
+	hmax = ((float)hmax * 255)/ 360;
+	smin = ((float)smin * 255)/ 100;
+	smax = ((float)smax * 255)/ 100;
+	vmin = ((float)vmin * 255)/ 100;
+	vmax = ((float)vmax * 255)/ 100;
+
+	//h/360*255
+	//s/100*255
+	//v/100*255
+
+	for (y = 0; y < height; y++){
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+			
+			hs = datasrc[pos_src];
+			ss = datasrc[pos_src + 1];
+			vs = datasrc[pos_src + 2];
+
+			/*if(hs >= hmin && hs <= hmax)
+				datadst[pos_dst] = 255;
+			else
+				datadst[pos_dst] = 0;
+			if(ss >= smin && ss <= smax)
+				datadst[pos_dst + 1] = 255;
+			else
+				datadst[pos_dst + 1] = 0;
+			if (vs >= vmin && vs <= vmax)
+				datadst[pos_dst + 2] = 255;
+			else
+				datadst[pos_dst + 2] = 0;*/
+			if (hs >= hmin && hs <= hmax && ss >= smin && ss <= smax && vs >= vmin && vs <= vmax)
+			{
+				datadst[pos_dst] = 255;
+				contador++;
+			}
+			else {
+				datadst[pos_dst] = 0;
+			}
+		}
+	}
+	return contador;
+}
+
+int vc_scale_gray_to_color_palette(IVC* src, IVC* dst) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+	float rf, gf, bf;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 3)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			if (datasrc[pos_src] <= 63)
+			{
+				rf = 0;
+				gf = (float)datasrc[pos_src] * 4;
+				bf = 255;
+			}
+			else if (datasrc[pos_src] >= 64 && datasrc[pos_src] <= 127)
+			{
+				rf = 0;
+				gf = 255;
+				bf = 255 - ((float)datasrc[pos_src] - 64) * 4;
+			}
+			else if (datasrc[pos_src] >= 128 && datasrc[pos_src] <= 191)
+			{
+				rf = ((float)datasrc[pos_src] - 128) * 4;
+				gf = 255;
+				bf = 0;
+			}
+			else
+			{
+				rf = 255;
+				gf = 255 - ((float)datasrc[pos_src] - 192) * 4;
+				bf = 0;
+			}
+
+			datadst[pos_dst] = rf;
+			datadst[pos_dst + 1] = gf;
+			datadst[pos_dst + 2] = bf;
+		}
+	}
+	return 1;
+}
+
+int vce_brain_percentage(IVC* src) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src;
+	float rf, gf, bf;
+	float rp = 0, yp = 0, gp = 0, bp = 0, brp = 0;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->channels != 3)) return 0;
+
+	IVC *imageDST = vc_image_new(src->width, src->height, 1, src->levels);
+
+	if (imageDST == NULL) {
+		printf("ERROR -> vc_image_new():\n\tFail to create file!\n");
+		(void)getchar();	
+		return 0;
+	}
+
+	//red
+	rp = rp + vc_hsv_segmentation(src, imageDST, 0, 45, 50, 100, 50, 100);
+	vc_write_image("vc0008r1.ppm", imageDST);
+	rp = rp + vc_hsv_segmentation(src, imageDST, 291, 360, 50, 100, 50, 100);
+	vc_write_image("vc0008r2.ppm", imageDST);
+
+	//yellow
+	yp = yp + vc_hsv_segmentation(src, imageDST, 46, 70, 50, 100, 50, 100);
+	vc_write_image("vc0008y.ppm", imageDST);
+
+	//green
+	gp = gp + vc_hsv_segmentation(src, imageDST, 71, 160, 50, 100, 14, 100); 
+	vc_write_image("vc0008g.ppm", imageDST);
+
+	//blue 
+	bp = bp + vc_hsv_segmentation(src, imageDST, 161, 290, 50, 100, 14, 100);
+	vc_write_image("vc0008b.ppm", imageDST);
+
+	//brain
+	brp = brp + vc_hsv_segmentation(src, imageDST, 1, 359, 50, 100, 10, 100);
+	vc_write_image("vc0008w.ppm", imageDST);
+
+	printf("----- Total pixels -----\n");
+	printf("Red: %.0f\n", rp);
+	printf("Yellow: %.0f\n", yp);
+	printf("Green: %.0f\n", gp);
+	printf("Blue: %.0f\n", bp);
+	printf("Brain: %.0f\n", brp);
+
+	printf("----- Percentage -----\n");
+    printf("- %.2f %% of brain with 76%% at 100%% brain activity\n", (rp / brp) * 100);
+    printf("- %.2f %% of brain with 51%% at 75%% brain activity\n", (yp / brp) * 100);
+    printf("- %.2f %% of brain with 26%% at 50%% brain activity\n", (gp / brp) * 100);
+    printf("- %.2f %% of brain with 0%% at 25%% brain activity\n\n\n", (bp / brp) * 100);
+	vc_image_free(imageDST);
+
+	return 1;
+}

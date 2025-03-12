@@ -30,6 +30,18 @@
     <ClCompile Include="mainAula4.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="mainAula5.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mainAula6.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mainAula7.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mainAula8.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vc.h">

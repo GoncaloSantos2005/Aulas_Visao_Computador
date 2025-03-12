@@ -9,6 +9,8 @@
 
 
 #define VC_DEBUG
+#define MAX3(a,b,c) ((a) > (b) ? ((a) > (c) ? (a) : (c)) : ((b) > (c) ? (b) : (c)))
+#define MIN3(a,b,c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -41,3 +43,7 @@ int vc_write_image(char* filename, IVC* image);
 int vc_gray_negative(IVC* srcdst);
 int vc_rgb_negative(IVC* srcdst);
 int vc_rgb_to_gray(IVC* src, IVC* dst);
+int vc_rgb_to_hsv(IVC* src, IVC* dst);
+int vc_hsv_segmentation(IVC* src, IVC* dst, int hmin, int hmax, int smin, int smax, int vmin, int vmax);
+int vc_scale_gray_to_color_pallete(IVC* src, IVC* dst);
+int vce_brain_percentage(IVC* src);

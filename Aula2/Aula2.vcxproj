@@ -132,6 +132,10 @@
     <ClCompile Include="main2Aula3.c" />
     <ClCompile Include="mainAula3.c" />
     <ClCompile Include="mainAula4.c" />
+    <ClCompile Include="mainAula5.c" />
+    <ClCompile Include="mainAula6.c" />
+    <ClCompile Include="mainAula7.c" />
+    <ClCompile Include="mainAula8.c" />
     <ClCompile Include="vc.c" />
   </ItemGroup>
   <ItemGroup>
