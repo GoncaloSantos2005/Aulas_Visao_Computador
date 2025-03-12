@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "vc.h"
 
-int main/*_vc0008*/(void) {
+int main_vc0008(void) {
 	IVC* image, * imageHSV;
 
 	image = vc_read_image("Images/PET/PET-Normal.ppm");

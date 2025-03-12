@@ -710,3 +710,36 @@ int vce_brain_percentage(IVC* src) {
 
 	return 1;
 }
+
+int vc_gray_to_binary(IVC* src, IVC* dst, int threshold) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {	
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			if (datasrc[pos_src] > threshold)
+				datadst[pos_dst] = 255;
+			else
+				datadst[pos_dst] = 0;
+		}
+	}
+	return 1;
+}
+
+int vc_gray_to_binary_global_mena(IVC* srcdst)

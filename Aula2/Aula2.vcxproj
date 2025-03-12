@@ -136,6 +136,7 @@
     <ClCompile Include="mainAula6.c" />
     <ClCompile Include="mainAula7.c" />
     <ClCompile Include="mainAula8.c" />
+    <ClCompile Include="mainAula9.c" />
     <ClCompile Include="vc.c" />
   </ItemGroup>
   <ItemGroup>
