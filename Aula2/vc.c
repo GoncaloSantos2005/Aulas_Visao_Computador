@@ -742,4 +742,40 @@ int vc_gray_to_binary(IVC* src, IVC* dst, int threshold) {
 	return 1;
 }
 
-int vc_gray_to_binary_global_mena(IVC* srcdst)
+int vc_gray_to_binary_global_mena(IVC* srcdst) {
+	unsigned char* datasrc = (unsigned char*)srcdst->data;
+	int bytesperline = srcdst->width * srcdst->channels;
+	int channels_src = srcdst->channels;
+	int width = srcdst->width;
+	int height = srcdst->height;
+	int x, y;
+	long int pos_src;
+	float threshold = 0;
+	int count = 0;
+	float brighttes = 0;
+
+	//Verificação de erros
+	if ((srcdst->width <= 0) || (srcdst->height <= 0) || (srcdst->data == NULL)) return 0;
+	if ((srcdst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {	
+			pos_src = y * bytesperline + x * channels_src;
+			count++;
+			brighttes += datasrc[pos_src];
+		}
+	}
+
+	float average = brighttes / count;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x * channels_src;
+			if (datasrc[pos_src] > average)	
+				datasrc[pos_src] = 255;
+			else
+				datasrc[pos_src] = 0;
+		}
+	}
+	return 1;
+}

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "vc.h"
 
-int main/*_vc0009*/(void) {
+int main_vc0009(void) {
 	IVC* image, * imageDST;
 
 	image = vc_read_image("Images/Segm/cells.pgm");
@@ -29,6 +29,28 @@ int main/*_vc0009*/(void) {
 
 
 
+
+	printf("Press any key to exit...\n");
+	(void)getchar();
+	return 0;
+}
+
+int main/*_vc0009_1*/(void) {
+	IVC* image;
+
+	image = vc_read_image("Images/Segm/cells.pgm");
+	if (image == NULL) {
+		printf("ERROR -> vc_read_image():\n\tFile not found!\n");
+		(void)getchar();
+		return 0;
+	}
+
+	vc_gray_to_binary_global_mena(image);
+	vc_gray_negative(image);
+
+	vc_write_image("vc-0009_1.pgm", image);
+
+	vc_image_free(image);
 
 	printf("Press any key to exit...\n");
 	(void)getchar();
