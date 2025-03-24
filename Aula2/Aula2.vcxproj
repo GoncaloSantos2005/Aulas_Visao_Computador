@@ -128,6 +128,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="mainAula10.c" />
+    <ClCompile Include="mainAula11.c" />
+    <ClCompile Include="mainAula12.c" />
     <ClCompile Include="mainAula2.c" />
     <ClCompile Include="main2Aula3.c" />
     <ClCompile Include="mainAula3.c" />

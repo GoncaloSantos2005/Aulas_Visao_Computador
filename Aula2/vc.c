@@ -15,6 +15,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "vc.h"
+#include <stdbool.h>
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -775,6 +776,278 @@ int vc_gray_to_binary_global_mena(IVC* srcdst) {
 				datasrc[pos_src] = 255;
 			else
 				datasrc[pos_src] = 0;
+		}
+	}
+	return 1;
+}
+
+int vc_grade_to_binary_grade(IVC* src,IVC* dst, int neighbor) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline = src->width * src->channels;
+	int width = src->width;
+	int height = src->height;
+	int offset = (neighbor - 1) / 2;
+	int x, y, nx, ny;
+	long int pos_src, pos_src_for, pos_dst;
+	int Vmax, Vmin, threshold;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	offset = (neighbor-1) / 2;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x;
+			pos_dst = pos_src; 
+			Vmax = 0;
+			Vmin = 255;
+
+			for (ny = y - offset; ny <= y + offset; ny++) {
+				for (nx = x - offset; nx <= x + offset; nx++) {
+					if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+						pos_src_for = ny * bytesperline + nx;
+						int pixel_value = datasrc[pos_src_for];
+
+						if (pixel_value > Vmax) Vmax = pixel_value;
+						if (pixel_value < Vmin) Vmin = pixel_value;
+					}
+				}
+			}
+
+			threshold = (Vmax + Vmin) / 2;
+			if (datasrc[pos_src] > threshold)
+				datadst[pos_dst] = 255;
+			else
+				datadst[pos_dst] = 0;
+		}
+	}
+	return 1;
+}
+
+int vc_gray_to_binary_niblack(IVC* src, IVC* dst, int kernel, float k) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline_src = src->width * src->channels;
+	int channels_src = src->channels;
+
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int width = src->width;
+	int height = src->height;
+	int x, y, aux_x, aux_y;
+	float avg, std_dev, sum_aux;
+	long int pos, pos_aux;
+	int pixel_value_cont, threshold, N;
+
+	int neighbors_to_count = (int)kernel / 2;
+
+
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) != (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos = y * bytesperline_src + x * channels_src;
+
+			pixel_value_cont = 0;
+			avg = 0.0f;
+			sum_aux = 0;
+			N = 0;
+
+			for (aux_y = y - neighbors_to_count; aux_y <= y + neighbors_to_count; aux_y++) {
+				for (aux_x = x - neighbors_to_count; aux_x <= x + neighbors_to_count; aux_x++) {
+					if (aux_x >= 0 && aux_x < width && aux_y >= 0 && aux_y < height) {
+						pos_aux = aux_y * bytesperline_src + aux_x * channels_src;
+						pixel_value_cont += datasrc[pos_aux];
+						N++;
+					}
+				}
+			}
+
+			avg = ((float)pixel_value_cont) / N;
+
+
+			for (aux_y = y - neighbors_to_count; aux_y <= y + neighbors_to_count; aux_y++) {
+				for (aux_x = x - neighbors_to_count; aux_x <= x + neighbors_to_count; aux_x++) {
+					if (aux_x >= 0 && aux_x < width && aux_y >= 0 && aux_y < height) {
+						pos_aux = aux_y * bytesperline_src + aux_x * channels_src;
+						int temp = (datasrc[pos_aux] - avg);
+						sum_aux += temp * temp;
+					}
+				}
+			}
+
+
+			std_dev = sqrt((((float)sum_aux) / N));
+			threshold = avg + k * std_dev;
+
+			datadst[pos] = (datasrc[pos] > threshold) ? 255 : 0;
+		}
+	}
+
+	return 0;
+}
+
+int vc_binary_dilate(IVC* src, IVC* dst, int kernel) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline = src->width * src->channels;
+	int width = src->width;
+	int height = src->height;
+	int offset = (kernel - 1) / 2;
+	int x, y, nx, ny;
+	long int pos_src, pos_src_for, pos_dst;
+	bool flag = false;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x;
+			pos_dst = pos_src;
+			flag = false;
+
+			for (ny = y - offset; ny <= y + offset; ny++) {
+				for (nx = x - offset; nx <= x + offset; nx++) {
+					if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+						pos_src_for = ny * bytesperline + nx;
+						int pixel_value = datasrc[pos_src_for];
+						if (pixel_value == 255){
+							flag = true;
+							break;
+						}
+					}
+				}
+			}
+			datadst[pos_dst] = (flag) ? 255 : 0;
+		}
+	}
+	return 1;
+}
+
+int vc_binary_erode(IVC* src, IVC* dst, int kernel) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline = src->width * src->channels;
+	int width = src->width;
+	int height = src->height;
+	int offset = (kernel - 1) / 2;
+	int x, y, nx, ny;
+	long int pos_src, pos_src_for, pos_dst;
+	bool flag = false;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x;
+			pos_dst = pos_src;
+			flag = false;
+
+			for (ny = y - offset; ny <= y + offset; ny++) {
+				for (nx = x - offset; nx <= x + offset; nx++) {
+					if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+						pos_src_for = ny * bytesperline + nx;
+						int pixel_value = datasrc[pos_src_for];
+						if (pixel_value != 255) {
+							flag = true;
+						}
+						
+					}
+				}
+			}
+			datadst[pos_dst] = (flag) ? 0 : 255;
+		}
+	}
+	return 1;
+}
+
+int vc_binary_open(IVC* src, IVC* dst, int kernel1, int kernel2)
+{
+	IVC* tmp = vc_image_new(src->width, src->height, src->channels, src->levels);
+	if (tmp == NULL) return 0;
+	vc_binary_erode(src, tmp, kernel1);
+	vc_binary_dilate(tmp, dst, kernel2);
+	vc_image_free(tmp);
+	return 1;
+}
+
+int vc_binary_close(IVC* src, IVC* dst, int kernel1, int kernel2) {
+	IVC* tmp = vc_image_new(src->width, src->height, src->channels, src->levels);
+	if (tmp == NULL) return 0;
+	vc_binary_dilate(src, tmp, kernel1);
+	vc_binary_erode(tmp, dst, kernel2);
+	vc_image_free(tmp);
+	return 1;
+}
+
+int vc_gray_to_binary_(IVC* src, IVC* dst, int threshold1, int threshold2) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			if (datasrc[pos_src] > threshold1 && datasrc[pos_src] < threshold2)
+				datadst[pos_dst] = 255;
+			else
+				datadst[pos_dst] = 0;
+		}
+	}
+	return 1;
+}
+
+int vc_write_image_binary_to_gray(IVC* src, IVC* bin, IVC* dst) {
+	unsigned char* datasrc = (unsigned char*)src->data;
+	unsigned char* databin = (unsigned char*)bin->data;
+	int bytesperline = src->width * src->channels;
+	int channels_src = src->channels;
+	unsigned char* datadst = (unsigned char*)dst->data;
+	int bytesperline_dst = dst->width * dst->channels;
+	int channels_dst = dst->channels;
+	int width = src->width;
+	int height = src->height;
+	int x, y;
+	long int pos_src, pos_dst;
+
+	//Verificação de erros
+	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL)) return 0;
+	if ((src->width != dst->width) || (src->height != dst->height)) return 0;
+	if ((src->channels != 1) || (dst->channels != 1)) return 0;
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			pos_src = y * bytesperline + x * channels_src;
+			pos_dst = y * bytesperline_dst + x * channels_dst;
+
+			if (databin[pos_src] == 255 )
+				datadst[pos_dst] = datasrc[pos_src];
+			else
+				datadst[pos_dst] = 0;
 		}
 	}
 	return 1;

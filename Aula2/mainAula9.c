@@ -35,7 +35,7 @@ int main_vc0009(void) {
 	return 0;
 }
 
-int main/*_vc0009_1*/(void) {
+int main_vc0009_1(void) {
 	IVC* image;
 
 	image = vc_read_image("Images/Segm/cells.pgm");
@@ -51,6 +51,36 @@ int main/*_vc0009_1*/(void) {
 	vc_write_image("vc-0009_1.pgm", image);
 
 	vc_image_free(image);
+
+	printf("Press any key to exit...\n");
+	(void)getchar();
+	return 0;
+}
+
+int main_vc0009_2(void) {
+	IVC* image,*imageDST;
+
+	image = vc_read_image("Images/Segm/cells.pgm");
+	if (image == NULL) {
+		printf("ERROR -> vc_read_image():\n\tFile not found!\n");
+		(void)getchar();
+		return 0;
+	}
+
+	imageDST = vc_image_new(image->width, image->height, image->channels, image->levels);
+
+	if (imageDST == NULL) {
+		printf("ERROR -> vc_image_new():\n\tFail to create file!\n");
+		(void)getchar();
+		return 0;
+	}
+
+	vc_grade_to_binary_grade(image, imageDST, 25);
+	vc_gray_negative(imageDST);
+	vc_write_image("vc-0009_2.pgm", imageDST);
+
+	vc_image_free(image);
+	vc_image_free(imageDST);
 
 	printf("Press any key to exit...\n");
 	(void)getchar();
